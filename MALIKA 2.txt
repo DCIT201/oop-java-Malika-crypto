@@ -1,0 +1,143 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
+
+# Abstract Base Class for Vehicle
+class Vehicle(ABC):
+    def __init__(self, vehicle_id, brand, model, base_rate):
+        self._vehicle_id = vehicle_id
+        self._brand = brand
+        self._model = model
+        self._base_rate = base_rate
+        self._is_available = True
+
+    @abstractmethod
+    def calculate_rental_cost(self, days):
+        pass
+
+    @abstractmethod
+    def is_available_for_rental(self):
+        return self._is_available
+
+    def get_vehicle_info(self):
+        return f"ID: {self._vehicle_id}, Brand: {self._brand}, Model: {self._model}"
+
+    def set_availability(self, availability):
+        if not isinstance(availability, bool):
+            raise ValueError("Availability must be a boolean.")
+        self._is_available = availability
+
+# Rentable Interface
+class Rentable:
+    def rent(self, customer, days):
+        pass
+
+    def return_vehicle(self):
+        pass
+
+# Concrete Vehicle Classes
+class Car(Vehicle, Rentable):
+    def __init__(self, vehicle_id, brand, model, base_rate):
+        super().__init__(vehicle_id, brand, model, base_rate)
+
+    def calculate_rental_cost(self, days):
+        return self._base_rate * days
+
+    def is_available_for_rental(self):
+        return self._is_available
+
+    def rent(self, customer, days):
+        if not self.is_available_for_rental():
+            raise Exception("Car is not available for rental.")
+        self.set_availability(False)
+        return f"Car rented to {customer.name} for {days} days."
+
+    def return_vehicle(self):
+        self.set_availability(True)
+        return "Car returned successfully."
+
+class Motorcycle(Vehicle, Rentable):
+    def __init__(self, vehicle_id, brand, model, base_rate):
+        super().__init__(vehicle_id, brand, model, base_rate)
+
+    def calculate_rental_cost(self, days):
+        discount_rate = 0.9 if days > 7 else 1
+        return self._base_rate * days * discount_rate
+
+    def is_available_for_rental(self):
+        return self._is_available
+
+    def rent(self, customer, days):
+        if not self.is_available_for_rental():
+            raise Exception("Motorcycle is not available for rental.")
+        self.set_availability(False)
+        return f"Motorcycle rented to {customer.name} for {days} days."
+
+    def return_vehicle(self):
+        self.set_availability(True)
+        return "Motorcycle returned successfully."
+
+class Truck(Vehicle, Rentable):
+    def __init__(self, vehicle_id, brand, model, base_rate):
+        super().__init__(vehicle_id, brand, model, base_rate)
+
+    def calculate_rental_cost(self, days):
+        return self._base_rate * days + 50  # Additional fixed charge
+
+    def is_available_for_rental(self):
+        return self._is_available
+
+    def rent(self, customer, days):
+        if not self.is_available_for_rental():
+            raise Exception("Truck is not available for rental.")
+        self.set_availability(False)
+        return f"Truck rented to {customer.name} for {days} days."
+
+    def return_vehicle(self):
+        self.set_availability(True)
+        return "Truck returned successfully."
+
+# Supporting Classes
+class Customer:
+    def __init__(self, customer_id, name):
+        self.customer_id = customer_id
+        self.name = name
+
+class RentalTransaction:
+    def __init__(self, transaction_id, customer, vehicle, days):
+        self.transaction_id = transaction_id
+        self.customer = customer
+        self.vehicle = vehicle
+        self.days = days
+        self.start_date = datetime.now()
+        self.end_date = self.start_date.replace(day=self.start_date.day + days)
+
+    def get_transaction_details(self):
+        return (
+            f"Transaction ID: {self.transaction_id}\n"
+            f"Customer: {self.customer.name}\n"
+            f"Vehicle: {self.vehicle.get_vehicle_info()}\n"
+            f"Duration: {self.days} days\n"
+            f"Cost: ${self.vehicle.calculate_rental_cost(self.days)}"
+        )
+
+class RentalAgency:
+    def __init__(self, name):
+        self.name = name
+        self.vehicles = []
+        self.customers = []
+
+    def add_vehicle(self, vehicle):
+        if not isinstance(vehicle, Vehicle):
+            raise ValueError("Only Vehicle instances can be added.")
+        self.vehicles.append(vehicle)
+
+    def add_customer(self, customer):
+        if not isinstance(customer, Customer):
+            raise ValueError("Only Customer instances can be added.")
+        self.customers.append(customer)
+
+    def find_available_vehicle(self, vehicle_type):
+        for vehicle in self.vehicles:
+            if isinstance(vehicle, vehicle_type) and vehicle.is_available_for_rental():
+                return vehicle
+        raise Exception("No available vehicles of the requested type.")
